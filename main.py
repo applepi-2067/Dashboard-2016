@@ -1,6 +1,6 @@
 from networktables import NetworkTable
 from time import sleep
-#import logging
+import logging
 import configparser
 
 robot = 'roborio-2067-frc.local'
@@ -10,7 +10,7 @@ print("initializing")
 config = configparser.ConfigParser()
 config.read("robot2015.ini")
 
-#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 NetworkTable.setIPAddress(robot)
 NetworkTable.setClientMode()
