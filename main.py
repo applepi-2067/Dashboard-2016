@@ -1,3 +1,5 @@
+import cherrypy
+from threading import Thread
 from networktables import NetworkTable
 from time import sleep
 import logging
@@ -7,10 +9,8 @@ robot = 'roborio-2067-frc.local'
 
 print("initializing")
 
-config = configparser.ConfigParser()
-config.read("robot2015.ini")
-
 logging.basicConfig(level=logging.DEBUG)
+config = configparser.ConfigParser()
 
 NetworkTable.setIPAddress(robot)
 NetworkTable.setClientMode()
@@ -19,34 +19,43 @@ NetworkTable.initialize()
 sd = NetworkTable.getTable('SmartDashboard')
 print("waiting for robot at: " + robot)
 
+class ScoutServer(object):
+	@cherrypy.expose
+	def index(self, COG_X="", COG_Y=""):
+		if sd.isConnected():
+			sd.putNumber("COG_X", COG_X)
+			sd.putNumber("COG_Y", COG_Y)
+		return COG_X
+		
+conf = {
+	'global': {
+		'server.socket_port': 8000
+	}
+}
+
+def start():
+	cherrypy.quickstart(ScoutServer(), '/', conf)
+	
+Thread(target=start).start() #launch http server in separate thread
+
 while not sd.isConnected():
 	sleep(0.1)
 
 print("now connected")
 
-for section in config.sections():
-	for key in list(config[section].keys()):
-		print("loading: " + section + '-' + key)
-		val = config[section][key]
-		try:
-			val = float(val)
-		except:
-			pass
+n = 0
+while True:
+	n += 1
+	print("Config iteration " + str(n))
+	config.read("robot2016.ini")
+	for section in config.sections():
+		for key in list(config[section].keys()):
+			val = config[section][key]
+			try:
+				val = float(val)
+			except:
+				print("something broke")
 			
-		sd.putNumber(section + '-' + key, val)
-
-print("config loaded")
-t = 0
-print("now listening for robot diagnostics")
-with open('Robot Logs/diag.csv', 'a') as f:
-	while True:
-		l = 0
-		r = 0
-		try:
-			l = sd.getNumber('Left Wheel')
-			r = sd.getNumber('Right Wheel')
-		except:
-			print('something broke')
-		f.write(str(round(t, 3)) + ',' + str(l) + ',' + str(r) + '\n')
-		t += 0.05
-		sleep(0.05)
+			print("Loading: " + section + "/" + key + ": " + str(val))
+			sd.putNumber(section + '/' + key, val)
+	sleep(1.5)
