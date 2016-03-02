@@ -21,11 +21,16 @@ print("waiting for robot at: " + robot)
 
 class ScoutServer(object):
 	@cherrypy.expose
-	def index(self, COG_X="", COG_Y=""):
+	def index(self, COG_X="", COG_Y="", COG_BOX_SIZE=""):
 		if sd.isConnected():
+			if COG_X == "" or COG_BOX_SIZE == "":
+				COG_X = 0
+				COG_Y = 0
+				COG_BOX_SIZE = 0
 			sd.putNumber("COG_X", COG_X)
 			sd.putNumber("COG_Y", COG_Y)
-		return COG_X
+			sd.putNumber("COG_BOX_SIZE", COG_BOX_SIZE)
+		return "."
 		
 conf = {
 	'global': {
@@ -45,6 +50,11 @@ print("now connected")
 
 n = 0
 while True:
+	if not sd.isConnected():
+		print("Waiting for connection")
+		sleep(1)
+		continue
+		
 	n += 1
 	print("Config iteration " + str(n))
 	config.read("robot2016.ini")
